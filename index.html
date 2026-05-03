@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>How to Save a Life — Lyrics Edit</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+::-webkit-scrollbar{display:none}
+
+html,body{
+  width:100%;height:100%;
+  background:#000;
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;
+  overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+
+/* ── Perspective viewport (never transforms) ── */
+#viewport{
+  width:100%;height:100dvh;
+  overflow:hidden;
+  display:flex;justify-content:center;
+  background:#000;
+  cursor:pointer;
+}
+
+/* ── Camera shake wrapper ── */
+#shakeWrap{
+  width:100%;max-width:430px;height:100%;
+  animation:handShake 4.8s ease-in-out infinite;
+  will-change:transform;
+}
+
+/* ── Whole-screen stage — camera transform applied here ── */
+#stage{
+  width:100%;height:100%;
+  background:#0a0a0c;
+  display:flex;flex-direction:column;
+  position:relative;
+  transform-origin:50% 50%;
+  transition:transform 1.1s cubic-bezier(0.22,0.61,0.36,1);
+  will-change:transform;
+}
+
+/* ══ BOKEH ══ */
+#bokeh{
+  position:absolute;inset:0;
+  pointer-events:none;z-index:0;overflow:hidden;
+}
+.bk{
+  position:absolute;border-radius:50%;
+  transform:translate(-50%,-50%);
+  animation:bokehFloat var(--bd) ease-in-out var(--bdl) infinite;
+}
+
+/* ══ TOP BAR ══ */
+#topbar{
+  background:rgba(20,20,24,0.94);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:0.5px solid #2c2c2e;
+  flex-shrink:0;z-index:10;position:relative;
+}
+.topbar-spacer{height:14px}
+.topbar-inner{
+  display:flex;align-items:center;
+  padding:4px 8px 10px;gap:6px;
+}
+.back-btn{
+  background:none;border:none;cursor:pointer;
+  padding:4px 2px;display:flex;align-items:center;gap:2px;
+  color:#0a84ff;font-size:17px;font-weight:400;
+}
+.tb-avatar-wrap{position:relative;margin-left:2px}
+.tb-avatar{
+  width:38px;height:38px;border-radius:50%;
+  overflow:hidden;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.tb-avatar img{width:100%;height:100%;object-fit:cover}
+.tb-online{
+  position:absolute;bottom:1px;right:1px;
+  width:10px;height:10px;border-radius:50%;
+  background:#30d158;border:2px solid #141418;
+}
+.tb-info{flex:1;margin-left:4px}
+.tb-name{font-size:16px;font-weight:600;color:#fff;line-height:1.2}
+.tb-status{font-size:12px;color:#636366;line-height:1.3}
+.tb-actions{display:flex;gap:14px;align-items:center;margin-right:4px}
+.tb-btn{
+  background:none;border:none;cursor:pointer;padding:4px;
+}
+.tb-icon-wrap{
+  width:32px;height:32px;border-radius:50%;background:#2c2c2e;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* ══ CHAT AREA ══ */
+#chatArea{
+  flex:1;position:relative;overflow:visible;z-index:1;
+  /* allow bubbles to be seen even when camera translates them out */
+}
+#chatScroll{
+  position:absolute;bottom:0;left:0;right:0;
+  display:flex;flex-direction:column;
+}
+#chatContent{padding:12px 0 10px}
+
+#tapHint{
+  text-align:center;color:#48484a;
+  font-size:13px;padding:0 20px 16px;
+}
+
+/* Vignette */
+.vignette{
+  position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:radial-gradient(ellipse at center,transparent 44%,rgba(10,10,12,0.52) 100%);
+}
+
+/* ══ BUBBLE ROW ══ */
+.bubble-row{
+  display:flex;align-items:flex-end;gap:7px;
+  padding:3px 12px;
+}
+.bubble-row.left{justify-content:flex-start}
+.bubble-row.right{justify-content:flex-end}
+
+.avatar{
+  width:28px;height:28px;border-radius:50%;
+  overflow:hidden;flex-shrink:0;margin-bottom:2px;
+}
+.avatar img{width:100%;height:100%;object-fit:cover}
+
+.bubble-content{
+  display:flex;flex-direction:column;
+  align-items:flex-start;gap:4px;max-width:72%;
+}
+.right-content{align-items:flex-end}
+
+.bubble{
+  padding:10px 14px;
+  font-size:15px;line-height:1.45;
+  word-break:break-word;color:#fff;
+  transition:filter 1.2s cubic-bezier(0.4,0,0.2,1);
+}
+.left-bubble{
+  border-radius:20px 20px 20px 5px;
+  background:#2c2c2e;
+  box-shadow:0 2px 12px rgba(0,0,0,0.6);
+}
+.right-bubble{
+  border-radius:20px 20px 5px 20px;
+  background:linear-gradient(135deg,#1e88ff,#1565c0);
+  box-shadow:0 4px 20px rgba(30,136,255,0.48);
+}
+.bubble.dim{filter:brightness(0.52)}
+.bubble.bright{filter:brightness(1)}
+
+.emoji-row{
+  font-size:19px;line-height:1;letter-spacing:3px;
+}
+
+/* ══ INPUT BAR ══ */
+#inputBar{
+  background:rgba(20,20,24,0.97);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-top:0.5px solid #2c2c2e;
+  padding:8px 8px 6px;
+  display:flex;align-items:flex-end;gap:6px;
+  flex-shrink:0;z-index:10;position:relative;
+}
+.ib-btn{
+  background:none;border:none;cursor:pointer;padding:4px;
+}
+.ib-icon{
+  width:32px;height:32px;border-radius:50%;background:#2c2c2e;
+  display:flex;align-items:center;justify-content:center;
+}
+#inputField{
+  flex:1;background:#2c2c2e;border-radius:22px;
+  padding:8px 14px;min-height:36px;
+  display:flex;align-items:center;
+  border:0.5px solid #3a3a3c;cursor:text;
+}
+#inputText{font-size:15px;color:#636366;line-height:1.4}
+.mic-btn{
+  background:none;border:none;cursor:pointer;padding:4px;
+  display:flex;align-items:center;
+}
+
+/* ══ KEYBOARD ══ */
+#keyboard{
+  background:#1c1c1e;
+  border-top:0.5px solid #3a3a3c;
+  flex-shrink:0;user-select:none;
+  z-index:10;position:relative;
+}
+.kbd-row{
+  display:flex;justify-content:center;
+  gap:5px;padding:5px 4px 0;
+}
+.kbd-row:last-child{padding-bottom:7px}
+.key{
+  height:42px;
+  background:#636566;
+  border:none;border-radius:6px;color:#fff;
+  font-size:17px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  box-shadow:0 1px 0 rgba(0,0,0,0.5);
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  font-family:inherit;
+}
+.key.special{background:#3a3a3c;font-size:13px}
+.key.space{
+  flex:1;background:#636566;
+  min-width:80px;max-width:calc(100% - 164px);
+}
+
+/* ══ ANIMATIONS ══ */
+@keyframes handShake{
+  0%  {transform:translate(0px,   0px)   rotate(0.00deg)}
+  8%  {transform:translate(1.4px,-0.8px) rotate(0.12deg)}
+  17% {transform:translate(-0.9px,1.4px) rotate(-0.10deg)}
+  25% {transform:translate(1.8px, 0.6px) rotate(0.18deg)}
+  33% {transform:translate(-0.5px,-1.6px)rotate(-0.14deg)}
+  42% {transform:translate(0.8px, 1.8px) rotate(0.08deg)}
+  50% {transform:translate(-1.6px,0.4px) rotate(-0.18deg)}
+  58% {transform:translate(1.2px,-1.2px) rotate(0.15deg)}
+  67% {transform:translate(0.3px, 1.0px) rotate(-0.08deg)}
+  75% {transform:translate(-1.4px,-0.5px)rotate(0.12deg)}
+  83% {transform:translate(0.7px, 1.5px) rotate(-0.16deg)}
+  92% {transform:translate(-1.0px,-0.9px)rotate(0.10deg)}
+  100%{transform:translate(0px,   0px)   rotate(0.00deg)}
+}
+@keyframes bokehFloat{
+  0%,100%{transform:translate(-50%,-50%) scale(1)}
+  33%{transform:translate(calc(-50% + 12px),calc(-50% - 18px)) scale(1.08)}
+  66%{transform:translate(calc(-50% - 8px),calc(-50% + 14px)) scale(0.93)}
+}
+@keyframes bubblePop{
+  0%  {opacity:0;transform:scale(0.72) translateY(12px)}
+  100%{opacity:1;transform:scale(1)    translateY(0)}
+}
+@keyframes emojiIn{
+  0%  {opacity:0;transform:translateY(7px) scale(0.65)}
+  100%{opacity:1;transform:translateY(0)   scale(1)}
+}
+.bubble-enter{
+  animation:bubblePop 0.6s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+.emoji-enter{
+  animation:emojiIn 0.56s cubic-bezier(0.4,0,0.2,1) 0.2s both;
+}
+</style>
+</head>
+<body>
+
+<div id="viewport">
+  <div id="shakeWrap">
+    <div id="stage">
+
+      <!-- BOKEH -->
+      <div id="bokeh"></div>
+
+      <!-- TOP BAR -->
+      <div id="topbar">
+        <div class="topbar-spacer"></div>
+        <div class="topbar-inner">
+          <button class="back-btn">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M14 5.5L9 11L14 16.5" stroke="#0a84ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            1
+          </button>
+          <div class="tb-avatar-wrap">
+            <div class="tb-avatar">
+              <img src="pfp.jpg" alt="Nathan">
+            </div>
+            <div class="tb-online"></div>
+          </div>
+          <div class="tb-info">
+            <div class="tb-name">Nathan Nhiêu</div>
+            <div class="tb-status">Active now</div>
+          </div>
+          <div class="tb-actions">
+            <!-- Phone -->
+            <button class="tb-btn">
+              <div class="tb-icon-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#0a84ff">
+                  <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V21c0 .6-.4 1-1 1C10.6 22 2 13.4 2 3c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.3 1l-1.2 1.2z"/>
+                </svg>
+              </div>
+            </button>
+            <!-- Video -->
+            <button class="tb-btn">
+              <div class="tb-icon-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#0a84ff">
+                  <path d="M17 10.5V7c0-1.1-.9-2-2-2H5C3.9 5 3 5.9 3 7v10c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2v-3.5l4 4v-11l-4 4z"/>
+                </svg>
+              </div>
+            </button>
+            <!-- Info -->
+            <button class="tb-btn">
+              <div class="tb-icon-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#0a84ff">
+                  <path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                </svg>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHAT AREA -->
+      <div id="chatArea">
+        <div id="chatScroll">
+          <div id="chatContent">
+            <div id="tapHint">Tap anywhere to start</div>
+          </div>
+        </div>
+        <div class="vignette"></div>
+      </div>
+
+      <!-- INPUT BAR -->
+      <div id="inputBar">
+        <button class="ib-btn">
+          <div class="ib-icon">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+              <path d="M7.5 2v11M2 7.5h11" stroke="#0a84ff" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </button>
+        <button class="ib-btn">
+          <div class="ib-icon">
+            <svg width="16" height="14" viewBox="0 0 16 14" fill="none">
+              <path d="M1.5 4C1.5 3.17 2.17 2.5 3 2.5h1l1-2h5l1 2h1c.83 0 1.5.67 1.5 1.5v7c0 .83-.67 1.5-1.5 1.5H3C2.17 13 1.5 12.33 1.5 11.5V4z" stroke="#0a84ff" stroke-width="1.2"/>
+              <circle cx="8" cy="7.5" r="2.5" stroke="#0a84ff" stroke-width="1.2"/>
+            </svg>
+          </div>
+        </button>
+        <button class="ib-btn">
+          <div class="ib-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="#0a84ff" stroke-width="1.2"/>
+              <circle cx="5" cy="6" r="1.5" fill="#0a84ff"/>
+              <path d="M1.5 11l3.5-3.5 2.5 2.5 2-2 4 4" stroke="#0a84ff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </button>
+        <div id="inputField">
+          <span id="inputText">Aa</span>
+        </div>
+        <button class="mic-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3a3 3 0 00-3 3v6a3 3 0 006 0V6a3 3 0 00-3-3z" stroke="#0a84ff" stroke-width="1.5"/>
+            <path d="M5 12a7 7 0 0014 0" stroke="#0a84ff" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M12 19v2" stroke="#0a84ff" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- KEYBOARD -->
+      <div id="keyboard"></div>
+
+    </div><!-- end stage -->
+  </div><!-- end shakeWrap -->
+</div><!-- end viewport -->
+
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   DATA
+════════════════════════════════════════════════════════════════════ */
+const LYRICS = [
+  { time:  0.0, text:"Where did I go wrong? I lost a friend",         emoji:"💔😞", side:"left"  },
+  { time:  4.8, text:"Somewhere along in the bitterness",             emoji:"🥀😔", side:"right" },
+  { time:  8.8, text:"And I would have stayed up with you all night", emoji:"🌙🕯️", side:"left"  },
+  { time: 12.4, text:"Had I known how to save a life",                emoji:"🙏😭", side:"right" },
+  { time: 16.0, text:"Where did I go wrong? I lost a friend",         emoji:"💔😢", side:"left"  },
+  { time: 20.0, text:"Somewhere along in the bitterness",             emoji:"😔🥺", side:"right" },
+  { time: 23.8, text:"And I would have stayed up with you all night", emoji:"✨💫", side:"left"  },
+  { time: 27.4, text:"Had I known how to save a life",                emoji:"💫🫂", side:"right" },
+  { time: 37.4, text:"How to save a life",                            emoji:"🕊️💙", side:"left"  },
+];
+
+const ANGLES = [
+  [-1.2, -2.8, -0.6],
+  [ 1.5,  3.0,  0.7],
+  [-1.5, -3.5, -0.8],
+  [ 1.2,  2.5,  0.6],
+  [-1.5, -3.0, -0.7],
+  [ 1.8,  3.5,  0.8],
+  [-1.8, -3.0, -0.8],
+  [ 1.5,  2.5,  0.6],
+  [-0.8, -1.5,  0.3],
+];
+
+const BOKEH_DATA = [
+  { x:12, y:22, sz:130, c:"rgba(30,136,255,0.22)",  dur:16, dl:0 },
+  { x:78, y:30, sz: 95, c:"rgba(180,60,220,0.18)",  dur:20, dl:2 },
+  { x:55, y:66, sz:170, c:"rgba(30,136,255,0.13)",  dur:24, dl:5 },
+  { x:20, y:80, sz: 85, c:"rgba(100,200,255,0.20)", dur:14, dl:1 },
+  { x:85, y:58, sz:115, c:"rgba(200,80,180,0.16)",  dur:18, dl:7 },
+  { x:40, y:10, sz: 75, c:"rgba(80,180,255,0.18)",  dur:26, dl:3 },
+  { x:68, y:88, sz:105, c:"rgba(30,136,255,0.12)",  dur:19, dl:8 },
+  { x: 5, y:50, sz: 65, c:"rgba(140,60,255,0.17)",  dur:15, dl:4 },
+];
+
+const KBD_ROWS = [
+  ["q","w","e","r","t","y","u","i","o","p"],
+  ["a","s","d","f","g","h","j","k","l"],
+  ["⇧","z","x","c","v","b","n","m","⌫"],
+  ["123"," ","return"],
+];
+
+/* ════════════════════════════════════════════════════════════════════
+   BUILD STATIC UI
+════════════════════════════════════════════════════════════════════ */
+
+// Bokeh
+const bokehEl = document.getElementById('bokeh');
+BOKEH_DATA.forEach(b => {
+  const d = document.createElement('div');
+  d.className = 'bk';
+  d.style.cssText = `
+    left:${b.x}%;top:${b.y}%;
+    width:${b.sz}px;height:${b.sz}px;
+    background:${b.c};
+    filter:blur(${Math.round(b.sz*0.38)}px);
+    --bd:${b.dur}s;--bdl:${b.dl}s;
+  `;
+  bokehEl.appendChild(d);
+});
+
+// Keyboard
+const kbdEl = document.getElementById('keyboard');
+KBD_ROWS.forEach((row, ri) => {
+  const rowDiv = document.createElement('div');
+  rowDiv.className = 'kbd-row';
+  if (ri === KBD_ROWS.length - 1) rowDiv.style.paddingBottom = '7px';
+
+  row.forEach(key => {
+    const btn = document.createElement('button');
+    btn.className = 'key';
+
+    if (key === ' ') {
+      btn.className += ' space';
+    } else if (key === '⇧' || key === '⌫' || key === '123' || key === 'return') {
+      btn.className += ' special';
+      btn.style.width = '44px';
+    } else {
+      // regular key: distribute evenly
+      btn.style.width = 'calc((100% - 58px) / 10)';
+      btn.style.minWidth = '28px';
+    }
+
+    if (key === '⇧') {
+      btn.innerHTML = `<svg width="18" height="16" viewBox="0 0 18 16" fill="none">
+        <path d="M9 2L2 9h4v5h6V9h4L9 2z" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>`;
+    } else if (key === '⌫') {
+      btn.innerHTML = `<svg width="22" height="16" viewBox="0 0 22 16" fill="none">
+        <path d="M8 2H19a1 1 0 011 1v10a1 1 0 01-1 1H8L2 8l6-6z" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M13 6l-3.5 4M9.5 6L13 10" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`;
+    } else if (key === ' ') {
+      btn.textContent = '';
+    } else {
+      btn.textContent = key;
+    }
+
+    btn.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      const txt = document.getElementById('inputText');
+      if (key === '⌫') {
+        const v = txt.textContent;
+        txt.textContent = v.length > 0 ? v.slice(0, -1) || 'Aa' : 'Aa';
+        txt.style.color = txt.textContent === 'Aa' ? '#636366' : '#fff';
+      } else if (key === ' ') {
+        if (txt.textContent === 'Aa') { txt.textContent = ' '; txt.style.color = '#fff'; }
+        else txt.textContent += ' ';
+      } else if (key === 'return') {
+        txt.textContent = 'Aa'; txt.style.color = '#636366';
+      } else if (key !== '123' && key !== '⇧') {
+        if (txt.textContent === 'Aa') { txt.textContent = ''; txt.style.color = '#fff'; }
+        txt.textContent += key;
+      }
+    });
+
+    rowDiv.appendChild(btn);
+  });
+  kbdEl.appendChild(rowDiv);
+});
+
+/* ════════════════════════════════════════════════════════════════════
+   CAMERA
+════════════════════════════════════════════════════════════════════ */
+const stage = document.getElementById('stage');
+let camTX=0, camTY=0, camScale=1, camRx=0, camRy=0, camRz=0;
+
+function applyCamera() {
+  stage.style.transform =
+    `perspective(1000px) translate(${camTX}px,${camTY}px) ` +
+    `scale(${camScale}) ` +
+    `rotateX(${camRx}deg) rotateY(${camRy}deg) rotateZ(${camRz}deg)`;
+}
+
+function scaleForText(text) {
+  const len = text.length;
+  // Short lines → zoom in very close; long lines → slightly less so they fit
+  if (len <= 18) return 1.45;
+  if (len <= 28) return 1.38;
+  if (len <= 38) return 1.28;
+  if (len <= 46) return 1.20;
+  return 1.14;
+}
+
+function fireCamera(idx) {
+  const row = bubbleRefs[idx];
+  if (!row) return;
+
+  // Measure the ACTUAL bubble pill, not the full-width row
+  const bubble = row.querySelector('.bubble');
+  if (!bubble) return;
+
+  const stageW = stage.offsetWidth;
+  const stageH = stage.offsetHeight;
+
+  // Walk the unscaled offsetParent chain to get layout position
+  // (offsetTop/offsetLeft are NOT affected by CSS transforms — exactly what we need)
+  let el = bubble;
+  let offTop = 0, offLeft = 0;
+  while (el && el !== stage) {
+    offTop  += el.offsetTop;
+    offLeft += el.offsetLeft;
+    el = el.offsetParent;
+  }
+
+  // Center of the bubble pill in stage-natural (pre-transform) coordinates
+  const bubCX = offLeft + bubble.offsetWidth  / 2;
+  const bubCY = offTop  + bubble.offsetHeight / 2;
+
+  // With transform-origin:50% 50% and transform:translate(TX,TY) scale(S):
+  // final screen position of bubCX = S*(bubCX - stageW/2) + TX + stageW/2
+  // Setting that equal to stageW/2 (screen center) gives: TX = S*(stageW/2 - bubCX)
+  camScale = scaleForText(LYRICS[idx].text);
+  camTX = camScale * (stageW / 2 - bubCX);
+  camTY = camScale * (stageH / 2 - bubCY);
+
+  const a = ANGLES[idx] || [0, 0, 0];
+  camRx = a[0]; camRy = a[1]; camRz = a[2];
+
+  applyCamera();
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   LYRICS / AUDIO
+════════════════════════════════════════════════════════════════════ */
+const chatContent = document.getElementById('chatContent');
+const bubbleRefs = [];
+let audio = null, lastShown = -1, started = false, rafId = null;
+
+function showMessage(idx) {
+  const line = LYRICS[idx];
+
+  // Dim all previous bubbles
+  chatContent.querySelectorAll('.bubble').forEach(b => {
+    b.classList.remove('bright');
+    b.classList.add('dim');
+  });
+
+  // Build row
+  const row = document.createElement('div');
+  row.className = 'bubble-row ' + line.side;
+
+  const avatarHTML = `
+    <div class="avatar">
+      <img src="pfp.jpg" alt="N">
+    </div>`;
+
+  const bubClass = line.side === 'left' ? 'left-bubble' : 'right-bubble';
+
+  row.innerHTML = `
+    ${line.side === 'left' ? avatarHTML : ''}
+    <div class="bubble-content ${line.side === 'right' ? 'right-content' : ''}">
+      <div class="bubble ${bubClass} bubble-enter bright">${line.text}</div>
+      <div class="emoji-row emoji-enter">${line.emoji}</div>
+    </div>
+  `;
+
+  chatContent.appendChild(row);
+  bubbleRefs[idx] = row;
+
+  setTimeout(() => fireCamera(idx), 80);
+}
+
+function tick() {
+  if (!audio) return;
+  const ct = audio.currentTime;
+  let next = 0;
+  for (let i = 0; i < LYRICS.length; i++) {
+    if (ct >= LYRICS[i].time) next = i + 1;
+    else break;
+  }
+  if (next > 0 && next - 1 > lastShown) {
+    lastShown = next - 1;
+    showMessage(next - 1);
+  }
+  rafId = requestAnimationFrame(tick);
+}
+
+function fallback() {
+  LYRICS.forEach((l, i) => {
+    setTimeout(() => {
+      if (i > lastShown) { lastShown = i; showMessage(i); }
+    }, l.time * 1000);
+  });
+}
+
+async function startPlayback() {
+  if (started) return;
+  started = true;
+  const hint = document.getElementById('tapHint');
+  if (hint) hint.style.display = 'none';
+
+  audio = new Audio('htsal.mp3');
+  audio.onerror = fallback;
+  try {
+    await audio.play();
+    rafId = requestAnimationFrame(tick);
+  } catch(e) {
+    fallback();
+  }
+}
+
+document.getElementById('viewport').addEventListener('click', startPlayback);
+</script>
+</body>
+</html>
